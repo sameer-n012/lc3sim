@@ -28,10 +28,15 @@ To access the application, go to [http://localhost:3000](http://localhost:3000) 
 -   [React Bootstrap](https://react-bootstrap.github.io/)
 -   [React DOM](https://www.npmjs.com/package/react-dom)
 -   [React Icons](https://react-icons.github.io/react-icons/)
+-   [React Router](https://www.npmjs.com/package/react-router)
 -   [React Router DOM](https://www.npmjs.com/package/react-router-dom)
+-   [react-redux](a)
 -   [react-router-bootstrap](https://www.npmjs.com/package/react-router-bootstrap)
 -   [react-scripts](https://www.npmjs.com/package/react-scripts)
 -   [react-markdown](https://www.npmjs.com/package/react-markdown)
+-   [redux](a)
+-   [redux-thunk](a)
+-   [redux-devtools-extension](a)
 
 </details>
 

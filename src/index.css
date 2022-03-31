@@ -1,3 +1,7 @@
+*, html, body {
+    margin: 0
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -7,7 +11,68 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.App {
+    position:relative;
+    min-height: 100vh;
+}
+
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+        monospace;
+    background-color: lightgray;
+    padding: 4px;
+    margin: 8px;
+    border-radius: 4px;
+}
+
+.above-footer {
+    padding-bottom: 6rem;
+}
+
+.footer {
+    margin-top: 1rem;
+    position: absolute;
+    bottom: 0;
+    align-items: center;
+    height: 6rem;
+    max-width:100%
+}
+
+.not-link,
+.not-link:hover,
+.not-link:visited {
+	text-decoration: none;
+	color: inherit;
+}
+
+.prevent-focus-highlight:focus {
+    border: initial;
+    outline: none;
+    box-shadow: inherit;
+}
+
+.cursor-clickable {
+    cursor:pointer;
+}
+
+.locked-scale-image {
+    height: fit-content;
+}
+
+
+.memory-table-search {
+    outline: none;
+    border: initial;
+    box-shadow: inherit;
+}
+
+.output-console-box {
+    overflow-y: scroll;
+    height: 15rem;
+}
+
+.input-console-box {
+    overflow-y: scroll;
+    height: 10rem;
+    resize: none;
 }
