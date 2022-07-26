@@ -50,8 +50,8 @@ const StateTable = () => {
 		console.log('dispatch edit register', location, value);
 		if (
 			!validateNumberBounds(location, 0, 11) ||
-			(!validateNumberBounds(value) && location != 11) ||
-			(!validateNumberBounds(value, 0, 7) && location == 11)
+			(!validateNumberBounds(value) && location !== 11) ||
+			(!validateNumberBounds(value, 0, 7) && location === 11)
 		) {
 			dispatch(editRegister(-1, -1));
 			return;

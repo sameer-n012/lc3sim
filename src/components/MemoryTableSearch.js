@@ -2,10 +2,7 @@ import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { editMemoryViewport } from '../actions/memoryActions';
 import { Form } from 'react-bootstrap';
-import {
-	convertToString,
-	convertToNumber,
-} from '../resources/numberConversions';
+import { convertToNumber } from '../resources/numberConversions';
 import { validateNumberBounds } from '../resources/validateNumberBounds';
 
 const MemoryTableSearch = () => {

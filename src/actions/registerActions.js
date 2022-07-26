@@ -9,7 +9,7 @@ export const editRegister = (registerNumber, value) => async (dispatch) => {
 			throw Error();
 		} else if (value < 0 || value > 0xffff) {
 			throw Error();
-		} else if (registerNumber == 11 && value > 0x0007) {
+		} else if (registerNumber === 11 && value > 0x0007) {
 			throw Error();
 		}
 		dispatch({

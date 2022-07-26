@@ -6,7 +6,6 @@ import MemoryTableSearch from './MemoryTableSearch';
 import { describeInstruction } from '../resources/decodeInstruction';
 import { validateNumberBounds } from '../resources/validateNumberBounds';
 import { editMemory } from '../actions/memoryActions';
-import { render } from '@testing-library/react';
 
 const MemoryTable = () => {
 	const dispatch = useDispatch();
@@ -132,7 +131,9 @@ const MemoryTable = () => {
 							</td>
 							<td>
 								{describeInstruction(
-									memoryValues[startLoc + i]
+									memoryValues[startLoc + i],
+									memoryValues,
+									registerValues
 								)}
 							</td>
 						</tr>

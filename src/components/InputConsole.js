@@ -1,10 +1,7 @@
 import React from 'react';
-import { useSelector, useDispatch } from 'react-redux';
 import { Container, Form } from 'react-bootstrap';
 
 const InputConsole = () => {
-	const { outputs } = useSelector((state) => state.output);
-
 	return (
 		<Container className='pt-3'>
 			<h6>Input Console</h6>

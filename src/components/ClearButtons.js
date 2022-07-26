@@ -8,6 +8,11 @@ import { clearOutput } from '../actions/inputOutputActions';
 const ClearButtons = () => {
 	const dispatch = useDispatch();
 
+	// const clearAll = () => {
+	// 	dispatch(clearMemory);
+	// 	dispatch(clearRegisters);
+	// };
+
 	return (
 		<Container className='pt-3'>
 			<Container className='d-flex justify-content-evenly'>

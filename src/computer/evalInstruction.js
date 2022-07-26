@@ -1,40 +1,52 @@
-import { opCodeToString } from '../computer/opcodeDict';
-import { convertToString, sext } from './numberConversions';
-//import { getMemoryAddress } from './memoryAddressing';
+import store from '../store';
+import { appendToOutput, clearOutput } from '../actions/inputOutputActions';
+import { opCodeToString } from './opcodeDict';
+import { sext } from '../resources/numberConversions';
+import { editRegister } from '../actions/registerActions';
+import { editMemory } from '../actions/memoryActions';
 
-// TODO implement sign extensions for offsets
-export const describeInstruction = (instr, memory, registers) => {
+// TODO implement evaluate
+export const evaluate = () => {
+	const state = store.getState(); // <-- get store as such
+	const registers = state.registers.registerValues;
+	const pc = registers[8] + 1;
+	const instr = getMemoryValue(pc - 1);
+
 	if (instr < 0x0000 || instr > 0xffff) {
-		return 'INVALID';
+		haltFromInvalid();
 	}
 
 	const opCode = opCodeToString(instr);
 
 	// NOTE INVALID
 	if (opCode === 'INVALID') {
-		return 'INVALID';
+		haltFromInvalid();
+		return;
 	}
 
 	// NOTE NOP
 	if (opCode === 'NOP') {
 		// NOP
 		// 0000 0000 0000 0000
-		return 'NOP';
+		return;
 	}
 
 	// NOTE BR
 	if (opCode === 'BR') {
 		// BR   NZP PCOFFSET
 		// 0000 xxx xxxxxxxxx
-		let n = (instr & 0x0800) >> 11 ? 'N' : '-';
-		let z = (instr & 0x0400) >> 10 ? 'Z' : '-';
-		let p = (instr & 0x0200) >> 9 ? 'P' : '-';
+		let n = (instr & 0x0800) >> 11;
+		let z = (instr & 0x0400) >> 10;
+		let p = (instr & 0x0200) >> 9;
 		let offset = sext((instr & 0x01ff) >> 0);
-		return `BR(${n}${z}${p}, ${convertToString(
-			offset + registers[8] + 1,
-			'hex',
-			'4'
-		)})`;
+		if (registers[11] === 4 && n === 1) {
+			store.dispatch(editRegister(8, pc + offset));
+		} else if (registers[11] === 2 && z === 1) {
+			store.dispatch(editRegister(8, pc + offset));
+		} else if (registers[11] === 1 && p === 1) {
+			store.dispatch(editRegister(8, pc + offset));
+		}
+		return;
 	}
 
 	// NOTE ADD_R
@@ -44,7 +56,8 @@ export const describeInstruction = (instr, memory, registers) => {
 		let dst = (instr & 0x0e00) >> 9;
 		let src1 = (instr & 0x01c0) >> 6;
 		let src2 = (instr & 0x0007) >> 0;
-		return `R${dst} <- ADD(R${src1}, R${src2})`;
+		store.dispatch(editRegister(dst, registers[src1] + registers[src2]));
+		return;
 	}
 
 	// NOTE ADD_I
@@ -53,8 +66,9 @@ export const describeInstruction = (instr, memory, registers) => {
 		// 0001 xxx xxx 1 xxxxx
 		let dst = (instr & 0x0e00) >> 9;
 		let src1 = (instr & 0x01c0) >> 6;
-		let imm = sext((instr & 0x001f) >> 0);
-		return `R${dst} <- ADD(R${src1}, ${convertToString(imm, 'hex', 4)})`;
+		let imm = (instr & 0x001f) >> 0;
+		store.dispatch(editRegister(dst, registers[src1] + imm));
+		return;
 	}
 
 	// NOTE LD
@@ -63,11 +77,8 @@ export const describeInstruction = (instr, memory, registers) => {
 		// 0010 xxx xxxxxxxxx
 		let dst = (instr & 0x0e00) >> 9;
 		let offset = sext((instr & 0x01ff) >> 0);
-		return `R${dst} <- LD(${convertToString(
-			offset + registers[8] + 1,
-			'hex',
-			'4'
-		)})`;
+		store.dispatch(editRegister(dst, getMemoryValue(pc + offset)));
+		return;
 	}
 
 	// NOTE ST
@@ -76,11 +87,8 @@ export const describeInstruction = (instr, memory, registers) => {
 		// 0011 xxx xxxxxxxxx
 		let src = (instr & 0x0e00) >> 9;
 		let offset = sext((instr & 0x01ff) >> 0);
-		return `${convertToString(
-			offset + registers[8] + 1,
-			'hex',
-			'4'
-		)} <- ST(R${src})`;
+		store.dispatch(editMemory(pc + offset, src));
+		return;
 	}
 
 	// NOTE JSR_P
@@ -88,7 +96,9 @@ export const describeInstruction = (instr, memory, registers) => {
 		// JSR    PCOFFSET
 		// 0100 1 xxxxxxxxxxx
 		let offset = sext((instr & 0x07ff) >> 0);
-		return `JSR(${convertToString(offset + registers[8] + 1, 'hex', '4')})`;
+		store.dispatch(editRegister(7, pc));
+		store.dispatch(editRegister(8, pc + offset));
+		return;
 	}
 
 	// NOTE JSR_B
@@ -96,7 +106,9 @@ export const describeInstruction = (instr, memory, registers) => {
 		// JSR       BSE
 		// 0100 0 00 xxx 000000
 		let bse = (instr & 0x01c0) >> 6;
-		return `JSR(R${bse})`;
+		store.dispatch(editRegister(7, pc));
+		store.dispatch(editRegister(8, registers[bse]));
+		return;
 	}
 
 	// NOTE AND_R
@@ -106,7 +118,10 @@ export const describeInstruction = (instr, memory, registers) => {
 		let dst = (instr & 0x0e00) >> 9;
 		let src1 = (instr & 0x01c0) >> 6;
 		let src2 = (instr & 0x0007) >> 0;
-		return `R${dst} <- AND(R${src1}, R${src2})`;
+		store.dispatch(
+			editRegister(dst, Number(registers[src1] & registers[src2]))
+		);
+		return;
 	}
 
 	// NOTE AND_I
@@ -116,7 +131,8 @@ export const describeInstruction = (instr, memory, registers) => {
 		let dst = (instr & 0x0e00) >> 9;
 		let src1 = (instr & 0x01c0) >> 6;
 		let imm = (instr & 0x0001f) >> 0; // QUESTION should this be sign extended
-		return `R${dst} <- AND(R${src1}, ${convertToString(imm, 'hex', '4')})`;
+		store.dispatch(editRegister(dst, Number(registers[src1] & imm)));
+		return;
 	}
 
 	// NOTE LDR
@@ -126,11 +142,10 @@ export const describeInstruction = (instr, memory, registers) => {
 		let dst = (instr & 0x0e00) >> 9;
 		let bse = (instr & 0x01c0) >> 6;
 		let offset = sext((instr & 0x003f) >> 0);
-		return `R${dst} <- M[${convertToString(
-			offset + registers[bse],
-			'hex',
-			'4'
-		)}]`;
+		store.dispatch(
+			editRegister(dst, getMemoryValue(Number(registers[bse] + offset)))
+		);
+		return;
 	}
 
 	// NOTE STR
@@ -140,18 +155,18 @@ export const describeInstruction = (instr, memory, registers) => {
 		let src = (instr & 0x0e00) >> 9;
 		let bse = (instr & 0x01c0) >> 6;
 		let offset = sext((instr & 0x003f) >> 0);
-		return `${convertToString(
-			offset + registers[bse],
-			'hex',
-			'4'
-		)} <- STR(R${src})`;
+		store.dispatch(
+			editMemory(Number(registers[bse] + offset), registers[src])
+		);
+		return;
 	}
 
 	// NOTE RTI
 	if (opCode === 'RTI') {
 		// RTI
 		// 1000 0000 0000 0000
-		return `RTI`;
+		store.dispatch(editRegister(8, registers[7]));
+		return;
 	}
 
 	// NOTE NOT
@@ -160,7 +175,8 @@ export const describeInstruction = (instr, memory, registers) => {
 		// 1001 xxx xxx 1 11111
 		let dst = (instr & 0x0e00) >> 9;
 		let src = (instr & 0x01c0) >> 6;
-		return `R${dst} <- NOT(R${src})`;
+		store.dispatch(editRegister(dst, ~registers[src]));
+		return;
 	}
 
 	// NOTE LDI
@@ -169,11 +185,10 @@ export const describeInstruction = (instr, memory, registers) => {
 		// 1010 xxx xxxxxxxxx
 		let dst = (instr & 0x0e00) >> 9;
 		let offset = sext((instr & 0x01ff) >> 0);
-		return `R${dst} <- LDI(${convertToString(
-			offset + registers[8],
-			'hex',
-			'4'
-		)})`;
+		store.dispatch(
+			editRegister(dst, getMemoryValue(getMemoryValue(pc + offset)))
+		);
+		return;
 	}
 
 	// NOTE STI
@@ -182,11 +197,8 @@ export const describeInstruction = (instr, memory, registers) => {
 		// 1011 xxx xxxxxxxxx
 		let src = (instr & 0x0e00) >> 9;
 		let offset = sext((instr & 0x01ff) >> 0);
-		return `${convertToString(
-			offset + registers[8],
-			'hex',
-			'4'
-		)} <- STI(R${src})`;
+		store.dispatch(editMemory(getMemoryValue(pc + offset), registers[src]));
+		return;
 	}
 
 	// NOTE JMP
@@ -194,7 +206,8 @@ export const describeInstruction = (instr, memory, registers) => {
 		// JMP      BSE
 		// 1100 000 xxx 000000
 		let bse = (instr & 0x01c0) >> 6;
-		return `JMP(R${bse})`;
+		store.dispatch(editRegister(8, registers[bse]));
+		return;
 	}
 
 	// NOTE reserved
@@ -202,7 +215,7 @@ export const describeInstruction = (instr, memory, registers) => {
 	if (opCode === 'reserved') {
 		// RESERVED
 		// 1101 xxxxxxxxxxxx
-		return `RESERVED`;
+		return;
 	}
 
 	// NOTE LEA
@@ -211,57 +224,32 @@ export const describeInstruction = (instr, memory, registers) => {
 		// 1110 xxx xxxxxxxxx
 		let dst = (instr & 0x0e00) >> 9;
 		let offset = sext((instr & 0x01ff) >> 0);
-		return `R${dst} <- LEA(${convertToString(
-			offset + registers[8],
-			'hex',
-			'4'
-		)})`;
+		store.dispatch(editRegister(dst, pc + offset));
+		return;
 	}
 
-	// NOTE TRAP_G
-	if (opCode === 'TRAP_G') {
-		// TRAP      TRPVEC
-		// 1111 0000 xxxxxxxxx
-		return `TRAP(GET)`;
+	//TODO evaluate traps
+};
+
+export const evaluateAll = () => {
+	store.dispatch(clearOutput());
+	store.dispatch(appendToOutput('Machine Started'));
+
+	let state = store.getState();
+	while (state.running.running) {
+		evaluate();
+		state = store.getState();
 	}
+};
 
-	// NOTE TRAP_O
-	if (opCode === 'TRAP_O') {
-		// TRAP      TRPVEC
-		// 1111 0000 xxxxxxxxx
-		return `TRAP(OUT)`;
+const haltFromInvalid = () => {
+	store.dispatch(appendToOutput('Invalid Instruction'));
+	store.dispatch(appendToOutput('Machine Halted'));
+};
+
+const getMemoryValue = (index) => {
+	if (index < 0x0000 || index > 0xffff) {
+		return -1;
 	}
-
-	// NOTE TRAP_P
-	if (opCode === 'TRAP_P') {
-		// TRAP      TRPVEC
-		// 1111 0000 xxxxxxxxx
-		return `TRAP(PUT)`;
-	}
-
-	// NOTE TRAP_I
-	if (opCode === 'TRAP_I') {
-		// TRAP      TRPVEC
-		// 1111 0000 xxxxxxxxx
-		return `TRAP(IN)`;
-	}
-
-	// NOTE TRAP_H
-	if (opCode === 'TRAP_H') {
-		// TRAP      TRPVEC
-		// 1111 0000 xxxxxxxxx
-		return `TRAP(HALT)`;
-	}
-
-	// NOTE TRAP
-	if (opCode === 'TRAP') {
-		// TRAP      TRPVEC
-		// 1111 0000 xxxxxxxxx
-		let trpvec = (instr & 0x00ff) >> 0; // QUESTION should this be sign extended
-		return `TRAP(${convertToString(trpvec, 'hex', 4)})`;
-	}
-
-	//TODO finish implementing code descriptions
-
-	return 'INVALID';
+	return store.getState().memory.memoryValues[index];
 };

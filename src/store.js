@@ -4,6 +4,10 @@ import { composeWithDevTools } from 'redux-devtools-extension';
 import { registerReducer } from './reducers/registerReducers';
 import { memoryReducer } from './reducers/memoryReducers';
 import { inputReducer, outputReducer } from './reducers/inputOutputReducers';
+import {
+	runningReducer,
+	debugSpeedReducer,
+} from './reducers/machineStateReducers';
 
 const middleware = [thunk];
 const reducers = combineReducers({
@@ -11,6 +15,8 @@ const reducers = combineReducers({
 	memory: memoryReducer,
 	output: outputReducer,
 	input: inputReducer,
+	running: runningReducer,
+	debugSpeed: debugSpeedReducer,
 });
 
 const initialState = {};
