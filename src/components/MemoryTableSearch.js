@@ -1,63 +1,85 @@
-import React from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { editMemoryViewport } from '../actions/memoryActions';
-import { Form } from 'react-bootstrap';
-import { convertToNumber } from '../resources/numberConversions';
-import { validateNumberBounds } from '../resources/validateNumberBounds';
+import React, { useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { editMemoryViewport } from "../actions/memoryActions";
+import { Form } from "react-bootstrap";
+import {
+    convertToNumber,
+    convertToString,
+} from "../resources/numberConversions";
+import { validateNumberBounds } from "../resources/validateNumberBounds";
 
 const MemoryTableSearch = () => {
-	const dispatch = useDispatch();
+    const dispatch = useDispatch();
 
-	const { memoryViewportError } = useSelector((state) => state.memory);
-	let localMemoryViewportError = false;
+    const { memoryViewportError } = useSelector((state) => state.memory);
+    const [localMemoryViewportError, setLocalMemoryViewportError] =
+        useState(false);
 
-	const updateLocation = (e) => {
-		if (
-			!validateNumberBounds(Number('0' + e.target.value)) &&
-			!validateNumberBounds(Number(e.target.value)) &&
-			!validateNumberBounds(
-				convertToNumber(e.target.value, 'uint_binary')
-			)
-		) {
-			localMemoryViewportError = true;
-		}
-		if (e.target.id === 'memlocsearch') {
-			if (e.target.value.startsWith('x')) {
-				dispatch(editMemoryViewport(Number('0' + e.target.value)));
-			} else if (e.target.value.startsWith('0x')) {
-				dispatch(editMemoryViewport(Number(e.target.value)));
-			} else if (/^([01]+)$/.test(e.target.value)) {
-				dispatch(
-					editMemoryViewport(
-						convertToNumber(e.target.value, 'uint_binary')
-					)
-				);
-			} else if (e.target.value === '0' || e.target.value.length === 0) {
-				dispatch(editMemoryViewport(0));
-			} else {
-				localMemoryViewportError = true;
-			}
-		}
-	};
+    const validate_location = (location) => {
+        setLocalMemoryViewportError(false);
 
-	return (
-		<div>
-			<Form.Control
-				className='p-0 m-0 ps-2 memory-table-search prevent-focus-highlight'
-				type='text'
-				name='memloc'
-				id='memlocsearch'
-				placeholder='Search Memory Locations'
-				style={{
-					backgroundColor:
-						memoryViewportError || localMemoryViewportError
-							? 'lightcoral'
-							: 'initial',
-				}}
-				onChange={(e) => updateLocation(e)}
-			/>
-		</div>
-	);
+        if (
+            !validateNumberBounds(Number("0" + location)) &&
+            !validateNumberBounds(Number(location)) &&
+            !validateNumberBounds(convertToNumber(location, "uint_binary"))
+        ) {
+            setLocalMemoryViewportError(true);
+            return null;
+        }
+
+        if (location.startsWith("x")) {
+            return Number("0" + location);
+        } else if (location.startsWith("0x")) {
+            return Number(location);
+        } else if (/^([01]+)$/.test(location)) {
+            return convertToNumber(location, "uint_binary");
+        } else if (location === "0" || location.length === 0) {
+            return 0;
+        } else {
+            setLocalMemoryViewportError(true);
+            return null;
+        }
+    };
+
+    const updateLocation = (e) => {
+        if (e.target.id === "memlocsearch") {
+            let l = validate_location(e.target.value);
+            if (!localMemoryViewportError) {
+                dispatch(editMemoryViewport(l));
+            }
+        }
+        console.log(localMemoryViewportError);
+    };
+
+    const formatLocation = (e) => {
+        if (e.target.id === "memlocsearch") {
+            let l = validate_location(e.target.value);
+            if (!localMemoryViewportError) {
+                e.target.value = convertToString(l, "hex", 4);
+            }
+        }
+    };
+
+    return (
+        <div>
+            <Form.Control
+                className="p-0 m-0 ps-2 memory-table-search prevent-focus-highlight"
+                type="text"
+                name="memloc"
+                id="memlocsearch"
+                placeholder="Search Memory Locations"
+                style={{
+                    color:
+                        memoryViewportError || localMemoryViewportError
+                            ? "lightcoral"
+                            : "initial",
+                }}
+                autoComplete="off"
+                onChange={(e) => updateLocation(e)}
+                onBlur={(e) => formatLocation(e)}
+            />
+        </div>
+    );
 };
 
 export default MemoryTableSearch;
